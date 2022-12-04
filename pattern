@@ -1,0 +1,61 @@
+#!/usr/bin/python
+
+import string
+import sys
+
+pattern = ""
+for i in range(26 * 10 * 4):
+    block = i // 4
+    pattern += chr(ord('a') + block // 10) if i % 4 != 3 else str(block % 10)
+pattern += pattern.upper()
+
+def decode_num(s: str) -> int:
+    if s.startswith('0b'): return int(s[2:], 2)
+    if s.startswith('0o'): return int(s[2:], 8)
+    if s.startswith('0x'): return int(s[2:], 16)
+    return int(s, 10)
+
+def generate(s: str, *args):
+    n = decode_num(s)
+    print(pattern[:n])
+
+def search(s: str, *args):
+    assert 3 <= len(s), "[!] too few informations. please provide more than 4 bytes"
+    def test(s):
+        if 4 <= len(s) and s in pattern:
+            print(pattern.index(s))
+            exit(0)
+    test(s)
+    _s = s[2:] if s.startswith("0x") else s
+    if all(c in string.hexdigits for c in _s):
+        decoded = bytes.fromhex(_s).decode()
+        if not ("-b" in args or "--big" in args): decoded = decoded[::-1]
+        test(decoded)
+    assert False, "[!] pattern not found."
+
+
+flags = {
+    "--generate": generate,
+    "-g": generate,
+    "--search": search,
+    "-s": search
+}
+assert 2 <= len(sys.argv) and sys.argv[1] in flags, "[!] please provide the operation flag(--generate(-g) or --search(-s))"
+
+flags[sys.argv[1]]
+
+if len(sys.argv) < 3:
+    s = input()
+    args = []
+else:
+    args = sys.argv[2:]
+    s = None
+    for i in range(len(args)):
+        if args[i].startswith("-"):
+            continue
+        s = args[i]
+        args.remove(s)
+        break
+    assert s is not None, "[!] provide the argument" 
+
+flags[sys.argv[1]](s, *args)
